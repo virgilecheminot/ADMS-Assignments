@@ -59,11 +59,15 @@ for i = 1:length(gamma_roots)
       mode_shapes(:, i) = w_i; % normalize the mode shape
 end
 
+function phi = phi_shape(gamma, x)
+      phi = [cos(gamma * x); sin(gamma * x); cosh(gamma * x); sinh(gamma * x)];
+end
+
 % plot the mode shapes
 for i = 1:1
       figure;
       g_i = gamma_roots(i);
-      shape_i =  mode_shapes(1, i) * cos(g_i * x_vals) + mode_shapes(2, i) * sin(g_i * x_vals) + mode_shapes(3, i) * cosh(g_i * x_vals) + mode_shapes(4, i) * sinh(g_i * x_vals);
+      shape_i = mode_shapes(:, i)' * phi_shape(g_i, x_vals);
       line([0, L], [0, 0], 'LineStyle', '--', 'Color', 'k');
       plot(x_vals, shape_i);
       title(['Mode Shape for f = ', num2str(f_i(i)), ' Hz']);
@@ -76,26 +80,29 @@ x_j = 0.2; % m
 x_k = 1.2; % m
 damp_factor = 0.01;
 
-freqs = linspace(0, 200, 1000);
+freqs = linspace(0, 200, 1200);
 
-FRF = zeros(1, length(freqs));
-
-for i = 1:length(freqs)
-      omega = 2 * pi * freqs(i);
-      FRF(i) = 0;
-      for j = 1:length(gamma_roots)
-            g_i = gamma_roots(j);
-            omega_i = g_i^2 * sqrt(E * J / (rho * b * h));
-            w_i = mode_shapes(:, j);
-            phi_j = w_i(1) * cos(g_i * x_j) + w_i(2) * sin(g_i * x_j) + w_i(3) * cosh(g_i * x_j) + w_i(4) * sinh(g_i * x_j);
-            phi_k = w_i(1) * cos(g_i * x_k) + w_i(2) * sin(g_i * x_k) + w_i(3) * cosh(g_i * x_k) + w_i(4) * sinh(g_i * x_k);
-            phi_i = w_i(1) * cos(g_i * x_vals) + w_i(2) * sin(g_i * x_vals) + w_i(3) * cosh(g_i * x_vals) + w_i(4) * sinh(g_i * x_vals);
-            m_i = trapz(x_vals, m*phi_i.^2);
-            num = (phi_j * phi_k / m_i);
-            den = -omega^2 + 2j * damp_factor * omega_i * omega + omega_i^2;
-            FRF(i) = FRF(i) + num / (omega_i^2 - omega^2 - 1i * damp_factor * omega_i * omega);
+function FRF = computeFRF(freqs, gamma_roots, mode_shapes, x_j, x_k, x_vals, damp_factor, E, J, rho, b, h, m)
+      FRF = zeros(1, length(freqs));
+      for i = 1:length(freqs)
+            omega = 2 * pi * freqs(i);
+            FRF(i) = 0;
+            for j = 1:length(gamma_roots)
+                  g_i = gamma_roots(j);
+                  omega_i = g_i^2 * sqrt(E * J / (rho * b * h));
+                  w_i = mode_shapes(:, j);
+                  phi_j = w_i' * phi_shape(g_i, x_j);
+                  phi_k = w_i' * phi_shape(g_i, x_k);
+                  phi_i = w_i' * phi_shape(g_i, x_vals);
+                  m_i = trapz(x_vals, m*phi_i.^2);
+                  num = (phi_j * phi_k / m_i);
+                  den = -omega^2 + 2j * damp_factor * omega_i * omega + omega_i^2;
+                  FRF(i) = FRF(i) + num / den;
+            end
       end
 end
+
+FRF = computeFRF(freqs, gamma_roots, mode_shapes, x_j, x_k, x_vals, damp_factor, E, J, rho, b, h, m);
 
 figure;
 subplot(2, 1, 1);
@@ -121,23 +128,7 @@ for i = 1:length(x_js)
       for j = 1:length(x_ks)
             x_j = x_js(i);
             x_k = x_ks(j);
-            FRF = zeros(1, length(freqs));
-            for k = 1:length(freqs)
-                  omega = 2 * pi * freqs(k);
-                  FRF(k) = 0;
-                  for l = 1:length(gamma_roots)
-                        g_i = gamma_roots(l);
-                        omega_i = g_i^2 * sqrt(E * J / (rho * b * h));
-                        w_i = mode_shapes(:, l);
-                        phi_j = w_i(1) * cos(g_i * x_j) + w_i(2) * sin(g_i * x_j) + w_i(3) * cosh(g_i * x_j) + w_i(4) * sinh(g_i * x_j);
-                        phi_k = w_i(1) * cos(g_i * x_k) + w_i(2) * sin(g_i * x_k) + w_i(3) * cosh(g_i * x_k) + w_i(4) * sinh(g_i * x_k);
-                        phi_i = w_i(1) * cos(g_i * x_vals) + w_i(2) * sin(g_i * x_vals) + w_i(3) * cosh(g_i * x_vals) + w_i(4) * sinh(g_i * x_vals);
-                        m_i = trapz(x_vals, m*phi_i.^2);
-                        num = (phi_j * phi_k / m_i);
-                        den = -omega^2 + 2j * damp_factor * omega_i * omega + omega_i^2;
-                        FRF(k) = FRF(k) + num / (omega_i^2 - omega^2 - 1i * damp_factor * omega_i * omega);
-                  end
-            end
+            FRF = computeFRF(freqs, gamma_roots, mode_shapes, x_j, x_k, x_vals, damp_factor, E, J, rho, b, h, m);
             G_exp((i-1)*length(x_ks) + j, :) = FRF;
       end
 end
