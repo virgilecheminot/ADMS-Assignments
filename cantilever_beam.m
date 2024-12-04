@@ -1,6 +1,6 @@
 tic; % Start timing
 
-close all; clc;
+close all; clc; clear;
 
 % Data of the reference structure
 L = 1.2; % m
@@ -9,19 +9,20 @@ b = 40e-3; % m
 rho = 2700; % kg/m^3
 E = 68e9; % Pa
 J = b * h^3 / 12; % m^4
-m = rho * b * h * L; % kg
+m = rho * b * h; % kg/m
 
 % Boundary conditions
 H = @(gamma) [  1,  0,  1,   0;
-                0,  1,  0,   1;
-               -cos(gamma*L), -sin(gamma*L),  cosh(gamma*L),  sinh(gamma*L);
-                sin(gamma*L), -cos(gamma*L),  sinh(gamma*L),  cosh(gamma*L)];
+    0,  1,  0,   1;
+    -cos(gamma*L), -sin(gamma*L),  cosh(gamma*L),  sinh(gamma*L);
+    sin(gamma*L), -cos(gamma*L),  sinh(gamma*L),  cosh(gamma*L)];
 
 % Characteristic equation
 chareq = @(gamma) det(H(gamma));
 
 % Solve the characteristic equation for gamma
 gamma_vals = linspace(0, 50, 10000);
+omega_vals = gamma_vals.^2 * sqrt(E * J / (rho * b * h));
 chareq_vals = arrayfun(chareq, gamma_vals);
 
 % Numerically find the roots of the characteristic equation
@@ -44,7 +45,7 @@ disp(['First 4 natural frequencies: ', num2str(f_i(1:4)), ' Hz']);
 %% Mode shapes
 
 % Compute the mode shapes
-x_vals = linspace(0, L, 1000);
+x_vals = linspace(0, L, 2000);
 mode_shapes = zeros(4, length(gamma_roots));
 
 for i = 1:length(gamma_roots)
@@ -63,14 +64,14 @@ function phi = phi_shape(gamma, x)
 end
 
 % Plot the mode shapes
-for i = 1:2
+for i = 1:0
     figure;
     g_i = gamma_roots(i);
     shape_i = mode_shapes(:, i)' * phi_shape(g_i, x_vals);
     plot(x_vals, shape_i);
     hold on;
     line([0, L], [0, 0], 'LineStyle', '--', 'Color', 'k');
-    title(['Mode Shape for f = ', num2str(f_i(i)), ' Hz']);
+    title(['Mode Shape n°', num2str(i), ' - f = ', num2str(f_i(i)), ' Hz']);
     xlabel('x (m)');
     ylabel('Mode Shape');
     grid on;
@@ -82,30 +83,29 @@ x_j = 0.2; % m
 x_k = 1.2; % m
 damp_factor = 0.01;
 
-freqs = linspace(0, 200, 2000);
+freqs = linspace(0.1, 200, 2000);
 
 function FRF = computeFRF(freqs, gamma_roots, mode_shapes, x_j, x_k, x_vals, damp_factor, E, J, rho, b, h, m)
     % Preallocation of FRF
     FRF = zeros(1, length(freqs));
-    
+
     % Calculation of constants
     omega_vals = 2 * pi * freqs;
-    omega_i_vals = gamma_roots.^2 * sqrt(E * J / (rho * b * h));
-    
+    omega_i_roots = gamma_roots.^2 * sqrt(E * J / (rho * b * h));
+
     % Pre-calculation of phi_shape for x_j, x_k and x_vals
     phi_j_vals = arrayfun(@(g_i) phi_shape(g_i, x_j), gamma_roots, 'UniformOutput', false);
     phi_k_vals = arrayfun(@(g_i) phi_shape(g_i, x_k), gamma_roots, 'UniformOutput', false);
     phi_i_vals = arrayfun(@(g_i) phi_shape(g_i, x_vals), gamma_roots, 'UniformOutput', false);
-    
+
     % Calculation of modal masses
     m_i_vals = arrayfun(@(j) trapz(x_vals, m * (mode_shapes(:, j)' * phi_i_vals{j}).^2), 1:length(gamma_roots));
-    
+
     % Main loop
     for i = 1:length(freqs)
         omega = omega_vals(i);
-        FRF(i) = 0;
         for j = 1:length(gamma_roots)
-            omega_i = omega_i_vals(j);
+            omega_i = omega_i_roots(j);
             w_i = mode_shapes(:, j);
             phi_j = w_i' * phi_j_vals{j};
             phi_k = w_i' * phi_k_vals{j};
@@ -123,7 +123,7 @@ FRF = computeFRF(freqs, gamma_roots, mode_shapes, x_j, x_k, x_vals, damp_factor,
 figure;
 subplot(2, 1, 1);
 semilogy(freqs, abs(FRF));
-title('Frequency Response Function');
+title('FRF at x_j = 0.2 m and x_k = 1.2 m');
 xlabel('Frequency (Hz)');
 ylabel('Magnitude');
 grid on;
@@ -137,6 +137,8 @@ grid on;
 
 x_js = [0.2, 0.4, 0.6, 0.8, 1.0];
 x_ks = [1.2, 0.9, 0.6, 0.3];
+R = length(x_js) * length(x_ks);
+nO = length(omega_i);
 
 G_exp = zeros(length(freqs), length(x_js) * length(x_ks));
 
@@ -153,7 +155,7 @@ end
 figure;
 subplot(2, 1, 1);
 semilogy(freqs, abs(G_exp));
-title('Frequency Response Function');
+title(['Number of FRFs = ', num2str(size(G_exp, 2))]);
 xlabel('Frequency (Hz)');
 ylabel('Magnitude');
 grid on;
@@ -162,5 +164,8 @@ plot(freqs, angle(G_exp));
 xlabel('Frequency (Hz)');
 ylabel('Phase');
 grid on;
+
+% Save the "experimental" FRFs
+save 'cantilever_FRF.mat' freqs G_exp;
 
 toc; % End timing and display elapsed time
