@@ -13,9 +13,9 @@ m = rho * b * h; % kg/m
 
 % Boundary conditions
 H = @(gamma) [  1,  0,  1,   0;
-    0,  1,  0,   1;
-    -cos(gamma*L), -sin(gamma*L),  cosh(gamma*L),  sinh(gamma*L);
-    sin(gamma*L), -cos(gamma*L),  sinh(gamma*L),  cosh(gamma*L)];
+                0,  1,  0,   1;
+                -cos(gamma*L), -sin(gamma*L),  cosh(gamma*L),  sinh(gamma*L);
+                sin(gamma*L), -cos(gamma*L),  sinh(gamma*L),  cosh(gamma*L)];
 
 % Characteristic equation
 chareq = @(gamma) det(H(gamma));
@@ -64,7 +64,7 @@ function phi = phi_shape(gamma, x)
 end
 
 % Plot the mode shapes
-for i = 1:0
+for i = 1:1
     figure;
     g_i = gamma_roots(i);
     shape_i = mode_shapes(:, i)' * phi_shape(g_i, x_vals);
@@ -78,12 +78,16 @@ for i = 1:0
     ylim([-max(abs(shape_i)), max(abs(shape_i))]);
 end
 
+% Save mode 1 shape
+shape_1 = mode_shapes(:, 1)' * phi_shape(gamma_roots(1), x_vals);
+save 'cantilever_mode1.mat' x_vals shape_1;
+
 %% Frequency response function
 x_j = 0.2; % m
 x_k = 1.2; % m
 damp_factor = 0.01;
 
-freqs = linspace(0.1, 200, 2000);
+freqs = linspace(0, 200, 10000);
 
 function FRF = computeFRF(freqs, gamma_roots, mode_shapes, x_j, x_k, x_vals, damp_factor, E, J, rho, b, h, m)
     % Preallocation of FRF
@@ -95,7 +99,7 @@ function FRF = computeFRF(freqs, gamma_roots, mode_shapes, x_j, x_k, x_vals, dam
 
     % Pre-calculation of phi_shape for x_j, x_k and x_vals
     phi_j_vals = arrayfun(@(g_i) phi_shape(g_i, x_j), gamma_roots, 'UniformOutput', false);
-    phi_k_vals = arrayfun(@(g_i) phi_shape(g_i, x_k), gamma_roots, 'UniformOutput', false);
+    phi_k_vals = arrayfun(@(g_i) -phi_shape(g_i, x_k), gamma_roots, 'UniformOutput', false); % Negative direction for x_k
     phi_i_vals = arrayfun(@(g_i) phi_shape(g_i, x_vals), gamma_roots, 'UniformOutput', false);
 
     % Calculation of modal masses
@@ -135,10 +139,8 @@ grid on;
 
 %% Considering N FRFs
 
-x_js = [0.2, 0.4, 0.6, 0.8, 1.0];
-x_ks = [1.2, 0.9, 0.6, 0.3];
-R = length(x_js) * length(x_ks);
-nO = length(omega_i);
+x_js = [0.2, 0.3, 0.45, 0.66, 0.9, 1.13];
+x_ks = 1.2;
 
 G_exp = zeros(length(freqs), length(x_js) * length(x_ks));
 
@@ -147,7 +149,7 @@ for i = 1:length(x_js)
         x_j = x_js(i);
         x_k = x_ks(j);
         FRF = computeFRF(freqs, gamma_roots, mode_shapes, x_j, x_k, x_vals, damp_factor, E, J, rho, b, h, m);
-        G_exp(:, (i-1)*length(x_ks) + j) = FRF';
+        G_exp(:, (i-1)*length(x_ks) + j) = FRF.';
     end
 end
 
