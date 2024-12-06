@@ -69,29 +69,29 @@ for mode_no = modes
     omega_i_guess = 2 * pi * freq_center;
     
     [peak, r] = max(abs(FRF(locs(mode_no), :)));
-    f1_indices = find(f<freq_center & f>fmin);
+    f1_indices = (f < freq_center) & (f > fmin);
     G1_values = abs(FRF(f1_indices, r));
     [~, idx1] = min(abs(G1_values - peak/sqrt(2)));
-    omega_1 = f(f1_indices(idx1)) * 2 * pi;
-    f2_indices = find(f>freq_center & f<fmax);
+    omega_1 = 2 * pi * f(f1_indices);
+    omega_1 = omega_1(idx1);
+    f2_indices = (f > freq_center) & (f < fmax);
     G2_values = abs(FRF(f2_indices, r));
     [~, idx2] = min(abs(G2_values - peak/sqrt(2)));
-    omega_2 = f(f2_indices(idx2)) * 2 * pi;
+    omega_2 = 2 * pi * f(f2_indices);
+    omega_2 = omega_2(idx2);
     damp_factor_guess = (omega_2^2 - omega_1^2) / (4 * omega_i_guess^2);
     disp(['Guess damping factor: ', num2str(damp_factor_guess), '%']);
     
-    A_guess = zeros(N, 1);
-    for i = 1:N
-        A_guess(i) = real(FRF(locs(mode_no), i) * (2j * damp_factor_guess * omega_i_guess^2));
-    end
+    A_guess = real(FRF(locs(mode_no), :).' * (2j * damp_factor_guess * omega_i_guess^2));
 
     RL_guess = zeros(N, 1);
     RH_guess = zeros(N, 1);
 
     x0 = [omega_i_guess; damp_factor_guess; A_guess; RL_guess; RH_guess];
 
-    err = @(x) abs(reshape(FRF(index_range, :) - numericalFRFs(f_range, N, x), [], 1));
-    % err = @(x) abs(reshape((FRF(index_range, :) - numericalFRFs(f_range, N, x)) .* conj(FRF(index_range, :) - numericalFRFs(f_range, N, x)), [], 1));
+    % err = @(x) abs(reshape(FRF(index_range, :) - numericalFRFs(f_range, N, x), [], 1));
+    err = @(x) reshape([real(FRF(index_range, :) - numericalFRFs(f_range, N, x));
+                        imag(FRF(index_range, :) - numericalFRFs(f_range, N, x))], [], 1);
     % err = @(x) norm(FRF(index_range, :) - numericalFRFs(f_range, N, x), 'fro')^2;
 
     options = optimoptions('lsqnonlin','Algorithm','levenberg-marquardt');
