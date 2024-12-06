@@ -34,8 +34,8 @@ mode_no = 1;
 
 % Frequency range
 freq_center = f(locs(mode_no));
-fmin = 4;
-fmax = 5;
+fmin = 3;
+fmax = 6;
 f_range = f(f>=fmin & f<=fmax);
 index_range = find(f>=fmin & f<=fmax);
 disp(['Frequency range: ', num2str(fmin), ' Hz to ', num2str(fmax), ' Hz']);
@@ -124,10 +124,9 @@ A_r = sol(3:nFRF+2);
 load 'cantilever_mode1.mat'
 
 [~, idx_r] = arrayfun(@(x) min(abs(x_vals - x)), x_r);
-sf0 = 1;
 err_shape = @(x) A_r * x - shape_1(idx_r).';
 options = optimoptions('lsqnonlin','Algorithm','levenberg-marquardt', 'Display', 'none');
-scale_factor = lsqnonlin(@(x) err_shape(x), sf0, [], [], options);
+scale_factor = lsqnonlin(@(x) err_shape(x), 0, -100, 100, options);
 
 figure;
 plot(x_vals, shape_1, 'LineWidth', 1.5);
