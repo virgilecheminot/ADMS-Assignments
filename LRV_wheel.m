@@ -69,17 +69,8 @@ for mode_no = modes
     omega_i_guess = 2 * pi * freq_center;
     
     [peak, r] = max(abs(FRF(locs(mode_no), :)));
-    f1_indices = (f < freq_center) & (f > fmin);
-    G1_values = abs(FRF(f1_indices, r));
-    [~, idx1] = min(abs(G1_values - peak/sqrt(2)));
-    omega_1 = 2 * pi * f(f1_indices);
-    omega_1 = omega_1(idx1);
-    f2_indices = (f > freq_center) & (f < fmax);
-    G2_values = abs(FRF(f2_indices, r));
-    [~, idx2] = min(abs(G2_values - peak/sqrt(2)));
-    omega_2 = 2 * pi * f(f2_indices);
-    omega_2 = omega_2(idx2);
-    damp_factor_guess = (omega_2^2 - omega_1^2) / (4 * omega_i_guess^2);
+    phase_deriv = (angle(FRF(locs(mode_no)+1, r)) - angle(FRF(locs(mode_no)-1, r)))/((f(2)-f(1))*4*pi);
+    damp_factor_guess = -1/(omega_i_guess * phase_deriv);
     disp(['Guess damping factor: ', num2str(damp_factor_guess), '%']);
     
     A_guess = real(FRF(locs(mode_no), :).' * (2j * damp_factor_guess * omega_i_guess^2));
@@ -120,14 +111,16 @@ for mode_no = modes
     disp('------------------');
 end
 
-theta_r = -90:15:-90+15*(N-1);
+theta_r = (0:11)*15;
 figure;
+ax = polaraxes;
 for i = 1:length(modes)
     A_r = solutions(3:N+2, i)/max(abs(solutions(3:N+2, i)));
-    polarplot(deg2rad(theta_r'), A_r/3+1, 'Marker', 'o', 'LineWidth', 1.5, 'DisplayName', ['Mode ', num2str(modes(i))]);
+    polarplot(deg2rad(theta_r'), A_r/3+1, 'Marker', 'o', 'LineWidth', 1.5, 'DisplayName', ['Mode ', num2str(modes(i)), ' - ', num2str(solutions(1, i)/(2*pi),4), ' Hz']);
     hold on;
 end
 title('Mode shapes');
 polarplot(deg2rad(0:1:360), ones(1, 361), 'k--', 'DisplayName', 'Original shape');
 legend();
+ax.ThetaZeroLocation = 'bottom';
 grid on;

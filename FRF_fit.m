@@ -44,15 +44,8 @@ disp(['Frequency range: ', num2str(fmin), ' Hz to ', num2str(fmax), ' Hz']);
 omega_i_guess = 2 * pi * freq_center;
 
 [peak, r] = max(abs(G(locs(mode_no), :)));
-f1_indices = find(f<freq_center & f>fmin);
-G1_values = abs(G(f1_indices, r));
-[~, idx1] = min(abs(G1_values - peak/sqrt(2)));
-omega_1 = f(f1_indices(idx1)) * 2 * pi;
-f2_indices = find(f>freq_center & f<fmax);
-G2_values = abs(G(f2_indices, r));
-[~, idx2] = min(abs(G2_values - peak/sqrt(2)));
-omega_2 = f(f2_indices(idx2)) * 2 * pi;
-damp_factor_guess = (omega_2^2 - omega_1^2) / (4 * omega_i_guess^2);
+phase_deriv = (angle(G(locs(mode_no)+1, r)) - angle(G(locs(mode_no)-1, r)))/((f(2)-f(1))*4*pi);
+damp_factor_guess = -1/(omega_i_guess * phase_deriv);
 
 A_guess = zeros(nFRF, 1);
 for i = 1:nFRF
