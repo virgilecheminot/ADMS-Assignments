@@ -99,7 +99,7 @@ function FRF = computeFRF(freqs, gamma_roots, mode_shapes, x_j, x_k, x_vals, dam
 
     % Pre-calculation of phi_shape for x_j, x_k and x_vals
     phi_j_vals = arrayfun(@(g_i) phi_shape(g_i, x_j), gamma_roots, 'UniformOutput', false);
-    phi_k_vals = arrayfun(@(g_i) -phi_shape(g_i, x_k), gamma_roots, 'UniformOutput', false); % Negative direction for x_k
+    phi_k_vals = arrayfun(@(g_i) -phi_shape(g_i, x_k), gamma_roots, 'UniformOutput', false); % Negative direction for x_k because de force is applied downwards
     phi_i_vals = arrayfun(@(g_i) phi_shape(g_i, x_vals), gamma_roots, 'UniformOutput', false);
 
     % Calculation of modal masses
