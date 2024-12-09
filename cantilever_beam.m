@@ -64,7 +64,7 @@ function phi = phi_shape(gamma, x)
 end
 
 % Plot the mode shapes
-for i = 1:1
+for i = 1:0
     figure;
     g_i = gamma_roots(i);
     shape_i = mode_shapes(:, i)' * phi_shape(g_i, x_vals);
@@ -77,10 +77,6 @@ for i = 1:1
     grid on;
     ylim([-max(abs(shape_i)), max(abs(shape_i))]);
 end
-
-% Save mode 1 shape
-shape_1 = mode_shapes(:, 1)' * phi_shape(gamma_roots(1), x_vals);
-save 'cantilever_mode1.mat' x_vals shape_1;
 
 %% Frequency response function
 x_j = 0.2; % m
@@ -153,21 +149,38 @@ for i = 1:length(x_js)
     end
 end
 
-% Plot the FRFs
-figure;
-subplot(2, 1, 1);
-semilogy(freqs, abs(G_exp));
-title(['Number of FRFs = ', num2str(size(G_exp, 2))]);
-xlabel('Frequency (Hz)');
-ylabel('Magnitude');
-grid on;
-subplot(2, 1, 2);
-plot(freqs, angle(G_exp));
-xlabel('Frequency (Hz)');
-ylabel('Phase');
-grid on;
-
 % Save the "experimental" FRFs
 save 'cantilever_FRF.mat' freqs G_exp;
 
 toc; % End timing and display elapsed time
+
+%% FRF fitting
+
+[FRFopt, freqsOpt, xSol] = FRF_fit(freqs, G_exp, 4, 10);
+
+% Compare the experimental and identified mode shapes
+
+x_r = [0.2, 0.3, 0.45, 0.66, 0.9, 1.13];
+[~, idx_r] = arrayfun(@(x) min(abs(x_vals - x)), x_r);
+A_r = xSol(3:length(x_r)+2,:);
+shape_1 = mode_shapes(:, 1)' * phi_shape(gamma_roots(1), x_vals);
+err_shape = @(x) A_r(:,1) * x - shape_1(idx_r).';
+options = optimoptions('lsqnonlin','Algorithm','levenberg-marquardt', 'Display', 'none');
+scale_factor = lsqnonlin(@(x) err_shape(x), 0, -100, 100, options);
+
+figure;
+for i = 1:4
+    shape = mode_shapes(:, i)' * phi_shape(gamma_roots(i), x_vals);
+    % Invert shape if i is even
+    if mod(i, 2) == 0
+        shape = -shape;
+    end
+    plot(x_vals, shape, 'LineWidth', 1.5);
+    hold on;
+    plot(x_r, A_r(:,i) * scale_factor, 'ro', 'LineWidth', 1.5);
+end
+yline(0, '--', 'Color', 'k');
+title('Mode shapes');
+xlabel('x (m)');
+ylabel('Mode shape');
+grid on;

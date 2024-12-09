@@ -54,7 +54,7 @@ function FRFs = numericalFRFs(freqs, nFRF, x)
     end
 end
 
-solutions = zeros(3*N+2, length(modes));
+sols = zeros(3*N+2, length(modes));
 
 for mode_no = modes
     disp(['Mode number: ', num2str(mode_no)]);
@@ -87,16 +87,16 @@ for mode_no = modes
 
     options = optimoptions('lsqnonlin','Algorithm','levenberg-marquardt');
     options.Display = 'final-detailed';
-    solutions(:,mode_no) = lsqnonlin(@(x) err(x), x0, [], [], options);
+    sols(:,mode_no) = lsqnonlin(@(x) err(x), x0, [], [], options);
 
-    FRF_opt = numericalFRFs(f_range, N, solutions(:,mode_no));
+    FRF_opt = numericalFRFs(f_range, N, sols(:,mode_no));
 
     figure;
     subplot(2, 1, 1);
     semilogy(f_range, abs(FRF(index_range, :)));
     hold on;
     semilogy(f_range, abs(FRF_opt), 'r--');
-    title(['Mode number: ', num2str(mode_no), newline, 'Frequency: ', num2str(solutions(1,mode_no)/(2*pi)), ' Hz, Damping factor: ', num2str(solutions(2,mode_no)*100), '%']);
+    title(['Mode number: ', num2str(mode_no), newline, 'Frequency: ', num2str(sols(1,mode_no)/(2*pi)), ' Hz, Damping factor: ', num2str(sols(2,mode_no)*100), '%']);
     xlabel('Frequency (Hz)');
     ylabel('Magnitude');
     grid on;
@@ -115,8 +115,8 @@ theta_r = (0:11)*15;
 figure;
 ax = polaraxes;
 for i = 1:length(modes)
-    A_r = solutions(3:N+2, i)/max(abs(solutions(3:N+2, i)));
-    polarplot(deg2rad(theta_r'), A_r/3+1, 'Marker', 'o', 'LineWidth', 1.5, 'DisplayName', ['Mode ', num2str(modes(i)), ' - ', num2str(solutions(1, i)/(2*pi),4), ' Hz']);
+    A_r = sols(3:N+2, i)/max(abs(sols(3:N+2, i)));
+    polarplot(deg2rad(theta_r'), A_r/3+1, 'Marker', 'o', 'LineWidth', 1.5, 'DisplayName', ['Mode ', num2str(modes(i)), ' - ', num2str(sols(1, i)/(2*pi),4), ' Hz']);
     hold on;
 end
 title('Mode shapes');
