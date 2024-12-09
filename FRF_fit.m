@@ -1,4 +1,7 @@
-function [FRFopt, freqsOpt, xSol] = FRF_fit(freqs, FRF, nModes, freqRange, plotBool)
+function [FRFopt, freqsOpt, xSol] = FRF_fit(freqs, FRF, nModes, freqRange, errType, plotBool)
+    if (~exist('errType', 'var'))
+        errType = 'complexDiff';
+    end
     if (~exist('plotBool', 'var'))
         plotBool = false;
     end
@@ -102,8 +105,15 @@ function [FRFopt, freqsOpt, xSol] = FRF_fit(freqs, FRF, nModes, freqRange, plotB
         x0 = [omegaGuess; dampFactorGuess; ArGuess; RLGuess; RHGuess];
 
         % Optimization
+        if strcmp(errType, 'complexDiff')
+            err = @(x) abs(reshape(FRF(indexRange, :) - numericalFRFs(freqsInRange, nFRF, x), [], 1));
+        elseif strcmp(errType, 'absDiff')
+            err = @(x) (reshape(abs(FRF(indexRange, :) - numericalFRFs(freqsInRange, nFRF, x)), [], 1));
+        elseif strcmp(errType, 'conjDiff')
+            err = @(x) (reshape((FRF(indexRange, :) - numericalFRFs(freqsInRange, nFRF, x)) .* conj(FRF(indexRange, :) - numericalFRFs(freqsInRange, nFRF, x)), [], 1));
+        end
         % err = @(x) norm(G(index_range, :) - numericalFRFs(f_range, nFRF, x), 'fro')^2;
-        err = @(x) abs(reshape(FRF(indexRange, :) - numericalFRFs(freqsInRange, nFRF, x), [], 1));
+        
 
         options = optimoptions('lsqnonlin','Algorithm','levenberg-marquardt');
         options.Display = "final-detailed";
