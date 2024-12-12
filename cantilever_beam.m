@@ -56,7 +56,9 @@ for i = 1:length(gamma_roots)
     H_hat_inv = pinv(H_hat);
     w_hat = -H_hat_inv * N;
     w_i = [1; w_hat];
-    mode_shapes(:, i) = w_i; % Normalize the mode shape
+    shape_i = w_i' * phi_shape(g_i, x_vals);
+    [~,ii] = max(abs(shape_i));
+    mode_shapes(:, i) = -w_i/shape_i(ii); % Normalize the mode shape
 end
 
 function phi = phi_shape(gamma, x)
@@ -64,19 +66,19 @@ function phi = phi_shape(gamma, x)
 end
 
 % Plot the mode shapes
-for i = 1:0
-    figure;
+figure;
+for i = 1:4
     g_i = gamma_roots(i);
     shape_i = mode_shapes(:, i)' * phi_shape(g_i, x_vals);
-    plot(x_vals, shape_i);
+    plot(x_vals, shape_i, 'LineWidth', 1.5, 'DisplayName', ['Mode n°', num2str(i)]);
     hold on;
-    line([0, L], [0, 0], 'LineStyle', '--', 'Color', 'k');
-    title(['Mode Shape n°', num2str(i), ' - f = ', num2str(f_i(i)), ' Hz']);
-    xlabel('x (m)');
-    ylabel('Mode Shape');
-    grid on;
     ylim([-max(abs(shape_i)), max(abs(shape_i))]);
 end
+grid on;
+line([0, L], [0, 0], 'LineStyle', '--', 'Color', 'k', 'LineWidth', 1.5, 'DisplayName', 'Undeformed beam');
+xlabel('x (m)');
+ylabel('Mode Shape');
+legend('Location', 'eastoutside');
 
 %% Frequency response function
 x_j = 0.2; % m
@@ -122,13 +124,13 @@ FRF = computeFRF(freqs, gamma_roots, mode_shapes, x_j, x_k, x_vals, damp_factor,
 % Plot the FRF
 figure;
 subplot(2, 1, 1);
-semilogy(freqs, abs(FRF));
-title('FRF at x_j = 0.2 m and x_k = 1.2 m');
+semilogy(freqs, abs(FRF), 'LineWidth', 1.5);
+% title('FRF at x_j = 0.2 m and x_k = 1.2 m');
 xlabel('Frequency (Hz)');
 ylabel('Magnitude');
 grid on;
 subplot(2, 1, 2);
-plot(freqs, angle(FRF));
+plot(freqs, angle(FRF), "LineWidth", 1.5);
 xlabel('Frequency (Hz)');
 ylabel('Phase');
 grid on;
@@ -149,6 +151,19 @@ for i = 1:length(x_js)
     end
 end
 
+figure;
+subplot(2, 1, 1);
+semilogy(freqs, abs(G_exp), 'LineWidth', 1.5);
+% title('Experimental FRFs');
+xlabel('Frequency (Hz)');
+ylabel('Magnitude');
+grid on;
+subplot(2, 1, 2);
+plot(freqs, angle(G_exp), "LineWidth", 1.5);
+xlabel('Frequency (Hz)');
+ylabel('Phase');
+grid on;
+
 % Save the "experimental" FRFs
 save 'cantilever_FRF.mat' freqs G_exp;
 
@@ -156,7 +171,7 @@ toc; % End timing and display elapsed time
 
 %% FRF fitting
 
-[FRFopt, freqsOpt, xSol] = FRF_fit(freqs, G_exp, 4, 10);
+[FRFopt, freqsOpt, xSol] = FRF_fit(freqs, G_exp, 4, 10, 'complexDiff', true);
 
 % Compare the experimental and identified mode shapes
 
@@ -172,15 +187,15 @@ figure;
 for i = 1:4
     shape = mode_shapes(:, i)' * phi_shape(gamma_roots(i), x_vals);
     % Invert shape if i is even
-    if mod(i, 2) == 0
-        shape = -shape;
-    end
-    plot(x_vals, shape, 'LineWidth', 1.5);
+    p = plot(x_vals, shape, 'LineWidth', 1.5, 'DisplayName', ['Theorical mode ', num2str(i)]);
     hold on;
-    plot(x_r, A_r(:,i) * scale_factor, 'ro', 'LineWidth', 1.5);
+    r = plot(x_r, A_r(:,i) * scale_factor, 'o', 'LineWidth', 1.5, 'DisplayName',['Identified mode', num2str(i)]);
+    r.Color = p.Color;
 end
-yline(0, '--', 'Color', 'k');
+yline(0, '--', 'Color', 'k', 'LineWidth', 1.5, 'DisplayName', 'Undeformed beam');
 title('Mode shapes');
 xlabel('x (m)');
 ylabel('Mode shape');
+ylim([-1.1, 1.1]);
+legend('Location', 'eastoutside');
 grid on;
