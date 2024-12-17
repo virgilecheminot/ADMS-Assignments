@@ -1,4 +1,4 @@
-function tmp=findcard(fid,card)
+function findcard(fid,card)
 % Searchimg, within the file specified by fid, and place the file reading
 % pointer on the next row. Reteurns 1 if the string is found, 0 otherwise
 maxiter=1e5;
@@ -9,7 +9,7 @@ for i=1:maxiter
       error(['The following string is not found: ' card])
    end
    riga=fgets(fid);
-   if ~isempty(findstr(riga,card))
+   if contains(riga, card)
       return
    end
 end

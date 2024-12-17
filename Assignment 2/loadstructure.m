@@ -1,16 +1,16 @@
-function [file_i,xy,nnod,sizee,idb,ndof,incidenze,l,gamma,m,EA,EJ,posiz,nbeam,pr]=loadstructure
+function [file_i,xy,nnod,sizee,idb,ndof,incidenze,l,gamma,m,EA,EJ,posiz,nbeam,pr]=loadstructure(file_i)
 
 % Loads *.inp file
 disp(' ');
-file_i=input(' Name of the input file *.inp (without extension) for the structure to be analyzed = ','s') ;
+fprintf('Loading input file %s\n',file_i);
 disp(' ')
 % Check input file
-if exist([file_i '.inp'])~=2
+if exist([file_i '.inp'], 'file')~=2
     disp(['File ',file_i,'.inp does not exist' ])
     file_i=[];
     return
 end
-nprova=file_i;
+% nprova=file_i;
 
 % File opening
 eval(['fid_i=fopen(''',file_i,'.inp'',''r'');']);
@@ -23,7 +23,7 @@ finewhile=1;
 iconta=0;
 while finewhile ==1
     line=scom(fid_i);
-    finewhile=isempty(findstr(line,'*ENDNODES'));
+    finewhile = ~contains(line, '*ENDNODES');
     if finewhile == 1
         tmp=sscanf(line,'%i %i %i %i %f %f')';
         iconta=iconta+1;
@@ -68,7 +68,7 @@ finewhile=1;
 iconta=0;
 while finewhile ==1
     line=scom(fid_i);
-    finewhile=isempty(findstr(line,'*ENDPROPERTIES'));
+    finewhile = ~contains(line, '*ENDPROPERTIES');
     if finewhile == 1
         tmp=sscanf(line,'%i %f %f %f')';
         iconta=iconta+1;
@@ -83,7 +83,7 @@ finewhile=1;
 iconta=0;
 while finewhile ==1
     line=scom(fid_i);
-    finewhile=isempty(findstr(line,'*ENDBEAMS'));
+    finewhile=~contains(line,'*ENDBEAMS');
     if finewhile == 1
         tmp=sscanf(line,'%i %i %i %i')';
         iconta=iconta+1;
@@ -100,8 +100,6 @@ while finewhile ==1
 end
 nbeam=iconta;
 disp(['Number of beam FE ',int2str(nbeam)])
-
-
 
 
 
