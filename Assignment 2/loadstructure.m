@@ -28,7 +28,7 @@ while finewhile ==1
         tmp=sscanf(line,'%i %i %i %i %f %f')';
         iconta=iconta+1;
         if iconta ~=tmp(1)
-        disp('Errore: nodi non numerati in ordine progressivo')
+        disp('Error: nodes are not numbered in sequential order')
         break  
         end
         ivinc(iconta,:)=tmp(2:4);
