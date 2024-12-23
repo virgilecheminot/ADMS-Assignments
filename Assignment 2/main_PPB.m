@@ -1,15 +1,15 @@
 clear; close all; clc
 
-L = 1.2; % [m]
-E = 68e9; % [Pa]
-b = 40e-3; % [m]
-h = 8e-3; % [m]
-r = 2700; % [kg/m^3]
+L = 1.2;        % [m]
+E = 68e9;       % [Pa]
+b = 40e-3;      % [m]
+h = 8e-3;       % [m]
+r = 2700;       % [kg/m^3]
 m = r*b*h;      % [kg/m]
 J = 1/12*b*h^3; % [m^4]
-% A = b*h; % [m^2]
-% EA = E*A; % [N]
-EJ = E*J; % [Nm^2]
+A = b*h;        % [m^2]
+EA = E*A;       % [N]
+EJ = E*J;       % [Nm^2]
 
 Omax = 500*2*pi;
 a = 1.5;
@@ -30,8 +30,8 @@ dis_stru(posit,l,gamma,xy,pr,idb,ndof);
 [KFF, KFC, KCC] = freefree(K,ndof);
 
 %% Compute the modes
-[modes, omega2] = eig(MFF\KFF);
-omega = diag(sqrt(omega2));
+[modes, omega_squared] = eig(MFF\KFF);
+omega = diag(sqrt(omega_squared));
 
 % Sort frequencies in ascending order
 [omega_sorted, omega_sorted_indices] = sort(omega);
@@ -64,7 +64,7 @@ F0 = zeros(ndof,1);
 index = idb(7,2); % force applied at node 7 in the y direction
 F0(index) = 1;
 
-om = (0:1:500)*2*pi;
+om = (0:1:500)*2*pi; %radiants per second
 
 % Preallocate X
 X = zeros(ndof, length(om));
