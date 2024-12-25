@@ -85,3 +85,32 @@ end
 ab = A\B;
 C = ab(1)*M_tot + ab(2)*K_tot;
 [CFF, CFC, CCC] = freefree(C,ndof);
+
+%% Frequency response function
+F0 = zeros(ndof,1);
+index = idb(4,2); % force applied at node 4 in the y direction
+F0(index) = 1;
+
+om = (0:0.2:100)*2*pi; % radiants per second
+
+X = zeros(ndof, length(om)); % Preallocate X
+for ii=1:length(om)
+    A = -om(ii)^2*MFF + 1i*om(ii)*CFF + KFF;
+    X(:,ii) = A\F0;
+end
+
+% Plot the FRF
+figure
+subplot(2,1,1)  
+semilogy(om/(2*pi), abs(X(idb(5,2),:)), 'LineWidth', 1.5)
+xlabel('Frequency [Hz]')
+ylabel('Amplitude')
+title('Frequency Response Function')
+grid on
+hold on
+subplot(2,1,2)
+plot(om/(2*pi), angle(X(idb(5,2),:)), 'LineWidth', 1.5)  
+xlabel('Frequency [Hz]')
+ylabel('Phase [rad]')
+grid on
+hold on

@@ -64,7 +64,7 @@ F0 = zeros(ndof,1);
 index = idb(7,2); % force applied at node 7 in the y direction
 F0(index) = 1;
 
-om = (0:1:500)*2*pi; %radiants per second
+om = (0:1:500)*2*pi; % radiants per second
 
 % Preallocate X
 X = zeros(ndof, length(om));
