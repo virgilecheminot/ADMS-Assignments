@@ -35,7 +35,7 @@ for k=1:n_el
 
 % Computing the axial (u) and transversal (w) displacements by means of
 % shape functions
-    csi=l(k)*[0:0.05:1];
+    csi=l(k)*(0:0.05:1);
     fu=zeros(6,length(csi));
     fu(1,:)=1-csi/l(k);
     fu(4,:)=csi/l(k);

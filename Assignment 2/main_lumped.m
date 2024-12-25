@@ -26,14 +26,62 @@ dis_stru(posit,l,gamma,xy,pr,idb,ndof);
 % assemble mass and stiffness matrices
 [M,K]=assem(incid,l,m,EA,EJ,gamma,idb);
 
-% adding lumped mass
+%% Concentrated elements contributions
+% lumped mass
 Ml_local = [ml  0   0
             0   ml  0
-            0   0   Jl];
+            0   0  Jl];
 
-Eml = zeros(3,size(M,1));
+Eml = zeros(3,size(M,1)); % expansion matrix
 indices = idb(5,:);
 Eml(:,indices) = eye(3);
 
 Ml = Eml'*Ml_local*Eml;
 M_tot = M + Ml;
+
+% concentrated springs
+Kl_local = [kx 0
+            0 ky];
+
+Ek = zeros(2,size(M,1));
+Ek(:,idb(5,1:2)) = eye(2);
+Kl = Ek'*Kl_local*Ek;
+
+K_tot = K + Kl;
+
+%% Extract the free-free partition
+[MFF, MFC, MCC] = freefree(M_tot,ndof);
+[KFF, KFC, KCC] = freefree(K_tot,ndof);
+
+%% Compute the modes
+[x0, omega_squared] = eig(MFF\KFF);
+omega = diag(sqrt(omega_squared));
+[omega, ind] = sort(omega);
+modes = x0(:,ind);
+
+% Plot the first 3 modes
+scale_factor = 1.5;
+figure
+for i = 1:3
+    mode = modes(:,i);
+    diseg2(mode, scale_factor, incid, l, gamma, posit, idb, xy);
+end
+
+% plot the mode frequencies
+figure
+stem(omega/(2*pi), 'filled', 'LineWidth', 1.5);
+yscale('log');
+xlabel('Mode number');
+ylabel('Frequency [Hz]');
+title('Mode frequencies');
+grid on;
+
+%% Damping matrix
+B = [h1 h2]';
+A = zeros(2,2);
+for ii=1:2
+    A(ii,:) = [1/(2*omega(ii)) omega(ii)/2];
+end
+ab = A\B;
+C = ab(1)*M_tot + ab(2)*K_tot;
+[CFF, CFC, CCC] = freefree(C,ndof);
