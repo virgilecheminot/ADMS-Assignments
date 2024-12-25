@@ -114,3 +114,46 @@ xlabel('Frequency [Hz]')
 ylabel('Phase [rad]')
 grid on
 hold on
+
+%% Concentrated spring between nodes 2 and 6
+K_k_local = [1 0 0 -1 0 0]' * k * [1 0 0 -1 0 0];
+g = 7*pi/4;
+lambda_k = [cos(g)  sin(g) 0
+            -sin(g) cos(g) 0
+            0       0      1];
+Lambda_k = [lambda_k zeros(3)
+            zeros(3) lambda_k];
+
+K_k_G = Lambda_k' * K_k_local * Lambda_k;
+idofn2 = idb(2,:);
+idofn6 = idb(6,:);
+idofk = [idofn2 idofn6];
+
+K_tot_k = K_tot;
+K_tot_k(idofk, idofk) = K_tot_k(idofk, idofk) + K_k_G;
+
+% Extract the free-free partition
+MFF_k = MFF;
+KFF_k = freefree(K_tot_k, ndof);
+
+% Compute the modes
+[x0_k, omega_squared_k] = eig(MFF_k\KFF_k);
+omega_k = diag(sqrt(omega_squared_k));
+[omega_k, ind_k] = sort(omega_k);
+modes_k = x0_k(:,ind_k);
+
+% Plot the first 3 modes
+figure
+for i = 1:3
+    mode = modes_k(:,i);
+    diseg2(mode, scale_factor, incid, l, gamma, posit, idb, xy);
+end
+
+% plot the mode frequencies
+figure
+stem(omega_k/(2*pi), 'filled', 'LineWidth', 1.5);
+yscale('log');
+xlabel('Mode number');
+ylabel('Frequency [Hz]');
+title('Mode frequencies');
+grid on;
