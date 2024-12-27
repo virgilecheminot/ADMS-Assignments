@@ -50,14 +50,7 @@ Kl = Ek'*Kl_local*Ek;
 K_tot = K + Kl;
 
 % concentrated springs between nodes 2 and 8
-Kk_local = [1 0 0 -1 0 0]' * k * [1 0 0 -1 0 0];
-g = 3*pi/2;
-lambda_k = [cos(g)  sin(g) 0
-            -sin(g) cos(g) 0
-            0       0      1];
-Lambda_k = [lambda_k zeros(3)
-            zeros(3) lambda_k];
-Kk_G = Lambda_k' * Kk_local * Lambda_k;
+Kk_G = [0 1 0 0 -1 0]' * k * [0 1 0 0 -1 0];
 idofn2 = idb(2,:);
 idofn8 = idb(8,:);
 idofk = [idofn2 idofn8];
@@ -127,4 +120,3 @@ plot(om/(2*pi), angle(X(idb(5,2),:)), 'LineWidth', 1.5);
 xlabel('Frequency [Hz]');
 ylabel('Phase [rad]');
 grid on;
-
