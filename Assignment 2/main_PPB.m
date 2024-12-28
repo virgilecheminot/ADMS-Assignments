@@ -62,28 +62,22 @@ CFF = ab(1)*MFF + ab(2)*KFF;
 
 %% Frequency response function
 
-F0 = zeros(ndof,1);
-index = idb(7,2); % force applied at node 7 in the y direction
-F0(index) = 1;
-index_2 = idb(12,2);
-F0_2 = zeros(ndof,1);
-F0_2([index, index_2]) = [1, 1];
+F0_7 = zeros(ndof,1);
+F0_7(idb(7,2)) = 1; % force applied at node 7 in the y direction
 
 om = (0:1:500)*2*pi; % radiants per second
 
-% Preallocate X
-X = zeros(ndof, length(om));
-
-for ii=1:length(om)
-    A = -om(ii)^2*MFF + 1i*om(ii)*CFF + KFF;
-    X(:,ii) = A\F0;
+function X = FRF(MFF, CFF, KFF, F0, om)
+    ndof = size(MFF,1);
+    X = zeros(ndof, length(om));
+    for ii=1:length(om)
+        A = -om(ii)^2*MFF + 1i*om(ii)*CFF + KFF;
+        X(:,ii) = A\F0;
+    end
 end
 
-X_2 = zeros(ndof, length(om));
-for ii=1:length(om)
-    A = -om(ii)^2*MFF + 1i*om(ii)*CFF + KFF;
-    X_2(:,ii) = A\F0_2;
-end
+% Compute the FRF using the function
+X = FRF(MFF, CFF, KFF, F0_7, om);
 
 % Plot the FRF
 
@@ -113,58 +107,79 @@ Phi = modes(:,ii);
 Mmod = Phi'*MFF*Phi;
 Kmod = Phi'*KFF*Phi;
 Cmod = Phi'*CFF*Phi;
-Fmod = Phi'*F0;
+Fmod = Phi'*F0_7;
 
 % FRF in modal superposition approach
-Xmod = zeros(length(ii), length(om));
-for i=1:length(om)
-    Xmod(:,i) = (Kmod - om(i)^2*Mmod + 1i*om(i)*Cmod)\Fmod;
+function X = FRFmod(Kmod, Mmod, Cmod, Fmod, Phi, om)
+    Xmod = zeros(length(Fmod), length(om));
+    for i=1:length(om)
+        Xmod(:,i) = (Kmod - om(i)^2*Mmod + 1i*om(i)*Cmod)\Fmod;
+    end
+    X = Phi*Xmod;
 end
-X_2m = Phi*Xmod;
+
+Xmod = FRFmod(Kmod, Mmod, Cmod, Fmod, Phi, om);
 
 idx4y = idb(4,2);
 
-figure
-subplot(2,1,1)
-semilogy(om/(2*pi), abs(X(idx4y,:)), 'LineWidth', 1.5)
-hold on
-semilogy(om/(2*pi), abs(X_2m(idx4y,:)), 'LineWidth', 1.5)
-xlabel('Frequency [Hz]')
-ylabel('Amplitude')
-title('Frequency Response Function')
-grid on
-legend('Direct approach', 'Modal superposition approach')
-subplot(2,1,2)
-plot(om/(2*pi), angle(X(idx4y,:)), 'LineWidth', 1.5)
-hold on
-plot(om/(2*pi), angle(X_2m(idx4y,:)), 'LineWidth', 1.5)
-xlabel('Frequency [Hz]')
-ylabel('Phase [rad]')
-grid on
-
-%% Modal superposition considering multiple forces
-Fmod_2 = Phi'*F0_2;
-Xmod_2 = zeros(length(ii), length(om));
-for i = 1:length(om)
-    Xmod_2(:,i) = (Kmod - om(i)^2*Mmod + 1i*om(i)*Cmod)\Fmod_2;
+function FRF_compare(om, X, Xmod, idx, title_str)
+    figure
+    subplot(2,1,1)
+    semilogy(om/(2*pi), abs(X(idx,:)), 'LineWidth', 1.5)
+    hold on
+    semilogy(om/(2*pi), abs(Xmod(idx,:)), 'LineWidth', 1.5)
+    xlabel('Frequency [Hz]')
+    ylabel('Amplitude')
+    title('Frequency Response Function')
+    grid on
+    title(sprintf(title_str))
+    legend('Direct approach', 'Modal superposition approach')
+    subplot(2,1,2)
+    plot(om/(2*pi), angle(X(idx,:)), 'LineWidth', 1.5)
+    hold on
+    plot(om/(2*pi), angle(Xmod(idx,:)), 'LineWidth', 1.5)
+    xlabel('Frequency [Hz]')
+    ylabel('Phase [rad]')
+    grid on
 end
 
-X_2m_2 = Phi*Xmod_2;
+FRF_compare(om, X, Xmod, idx4y, 'FRF at node 4 in the y direction considering force at node 7')
 
-figure
-subplot(2,1,1)
-semilogy(om/(2*pi), abs(X_2(idx4y,:)), 'LineWidth', 1.5)
-hold on
-semilogy(om/(2*pi), abs(X_2m_2(idx4y,:)), 'LineWidth', 1.5)
-xlabel('Frequency [Hz]')
-ylabel('Amplitude')
-title('Frequency Response Function')
-grid on
-legend('Direct approach', 'Modal superposition approach')
-subplot(2,1,2)
-plot(om/(2*pi), angle(X_2(idx4y,:)), 'LineWidth', 1.5)
-hold on
-plot(om/(2*pi), angle(X_2m_2(idx4y,:)), 'LineWidth', 1.5)
-xlabel('Frequency [Hz]')
-ylabel('Phase [rad]')
-grid on
+%% Modal superposition considering forces at nodes 7 and 12
+F0_7_12 = zeros(ndof,1);
+F0_7_12([idb(7,2) idb(12,2)]) = [1, 1]; % forces applied at nodes 7 and 12 in the y direction
+Fmod_2 = Phi'*F0_7_12;
+
+% FRF in direct approach
+X_2 = FRF(MFF, CFF, KFF, F0_7_12, om);
+
+% FRF in modal superposition approach
+X_2mod = FRFmod(Kmod, Mmod, Cmod, Fmod_2, Phi, om);
+
+FRF_compare(om, X_2, X_2mod, idx4y, 'FRF at node 4 in the y direction considering forces at nodes 7 and 12')
+
+%% Modal superposition considering forces at nodes 2 and 12
+F0_2_12 = zeros(ndof,1);
+F0_2_12([idb(2,2) idb(12,2)]) = [1, 1];
+Fmod_3 = Phi'*F0_2_12;
+
+% FRF in direct approach
+X_3 = FRF(MFF, CFF, KFF, F0_2_12, om);
+
+% FRF in modal superposition approach
+X_3mod = FRFmod(Kmod, Mmod, Cmod, Fmod_3, Phi, om);
+
+FRF_compare(om, X_3, X_3mod, idx4y, 'FRF at node 4 in the y direction considering forces at nodes 2 and 12')
+
+%% Modal superposition considering forces at nodes 2 and 12 in opposite directions
+F0_2_12_opposite = zeros(ndof,1);
+F0_2_12_opposite([idb(2,2) idb(12,2)]) = [-1, 1];
+Fmod_4 = Phi'*F0_2_12_opposite;
+
+% FRF in direct approach
+X_4 = FRF(MFF, CFF, KFF, F0_2_12_opposite, om);
+
+% FRF in modal superposition approach
+X_4mod = FRFmod(Kmod, Mmod, Cmod, Fmod_4, Phi, om);
+
+FRF_compare(om, X_4, X_4mod, idx4y, 'FRF at node 4 in the y direction considering forces at \nnodes 2 and 12 in opposite directions')
