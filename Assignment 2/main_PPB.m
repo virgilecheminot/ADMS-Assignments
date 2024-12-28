@@ -183,3 +183,37 @@ X_4 = FRF(MFF, CFF, KFF, F0_2_12_opposite, om);
 X_4mod = FRFmod(Kmod, Mmod, Cmod, Fmod_4, Phi, om);
 
 FRF_compare(om, X_4, X_4mod, idx4y, 'FRF at node 4 in the y direction considering forces at \nnodes 2 and 12 in opposite directions')
+
+%% Distributed load on elements
+p0 = 100; % [N/m]
+p0G = [0 p0]';
+FG = zeros(3*nnod,1);
+elements = 2;
+
+for ii = elements
+    Lk = l(ii);
+    g = gamma(ii);
+    p0L = [cos(g) sin(g);
+          -sin(g) cos(g)] * p0G;
+    FkL = [Lk/2 ;  0   ; 0 ; Lk/2 ;  0   ; 0] * p0L(1) + ...
+          [ 0   ; Lk/2 ; 0 ;  0   ; Lk/2 ; 0] * p0L(2);
+    FkG = [cos(g) -sin(g) 0 0       0      0;
+           sin(g)  cos(g) 0 0       0      0;
+           0       0      1 0       0      0;
+           0       0      0 cos(g) -sin(g) 0;
+           0       0      0 sin(g)  cos(g) 0;
+           0       0      0 0       0      1] * FkL;
+    Ek = zeros(6,3*nnod);
+    for jj = 1:6
+        Ek(jj,incid(ii,jj)) = 1;
+    end
+end
+FG = FG + Ek' * FkG;
+
+%% Static deflection
+xF = KFF\FG(1:ndof);
+
+% Plot the static deflection
+figure
+diseg2(xF, 100, incid, l, gamma, posit, idb, xy); % scale factor 100
+title('Static deflection')
