@@ -50,7 +50,7 @@ Kl = Ek'*Kl_local*Ek;
 K_tot = K + Kl;
 
 % concentrated springs between nodes 2 and 8
-Kk_G = [0 1 0 0 -1 0]' * k * [0 1 0 0 -1 0];
+Kk_G = [0 -1 0 0 1 0]' * k * [0 -1 0 0 1 0];
 idofn2 = idb(2,:);
 idofn8 = idb(8,:);
 idofk = [idofn2 idofn8];
