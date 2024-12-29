@@ -25,3 +25,26 @@ else
     error('Some elements fail the condition omega_1,k / Omega_max >= 1.5.\nFailed element(s): %s\nElement ratios: %s', num2str(failed_ind'), num2str(ratios(failed_ind)'));
 end
 % adding a node in the middle of every element solved the problem
+
+%% Task 2
+% Extract the free-free partition
+[MFF, MFC, MCC] = freefree(M, ndof);
+[KFF, KFC, KCC] = freefree(K, ndof);
+
+% Compute the modes
+[x0, omega_squared] = eig(MFF\KFF);
+omega = diag(sqrt(omega_squared));
+[omega, ind] = sort(omega);
+modes = x0(:,ind);
+
+% Plot the first 6 modes
+scale_factor = 10;
+figure('Position', [300 578 1311 480], 'Renderer', 'painters'); %#ok<*FGREN>
+t = tiledlayout(3, 2, 'TileSpacing', 'compact', 'Padding', 'compact');
+for i = 1:6
+    mode = modes(:,i);
+    nexttile;
+    diseg2(mode, scale_factor, incid, l, gamma, posit, idb, xy);
+    legend('off');
+    title(sprintf('Mode %d - f = %.2f Hz', i, omega(i)/(2*pi)));
+end
