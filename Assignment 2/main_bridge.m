@@ -1,4 +1,5 @@
 clear; close all; clc
+set(groot, 'defaultFigureRenderer', 'painters');
 
 %% Initialization
 % load the input file and assemble the structure
@@ -39,7 +40,7 @@ modes = x0(:,ind);
 
 % Plot the first 6 modes
 scale_factor = 10;
-figure('Position', [300 578 1311 480], 'Renderer', 'painters'); %#ok<*FGREN>
+figure('Position', [300 578 1311 480]);
 t = tiledlayout(3, 2, 'TileSpacing', 'compact', 'Padding', 'compact');
 for i = 1:6
     mode = modes(:,i);
@@ -58,3 +59,120 @@ end
 ab = A\B;
 C = ab(1)*M + ab(2)*K;
 [CFF, CFC, CCC] = freefree(C, ndof);
+
+%% Task 4
+F0 = zeros(ndof, 1);
+F0(idb(6,2)) = 1; % force applied at node 6 in the y direction
+om = (0:0.01:7)*2*pi; 
+
+% FRF of vertical displacement and acceleration at nodes 6, 7 and 31
+X = zeros(ndof, length(om));
+for ii = 1:length(om)
+    A = -om(ii)^2*MFF + 1i*om(ii)*CFF + KFF;
+    X(:,ii) = A\F0;
+end
+
+function plotFRF(om, X, idx, idb, plot_title)
+    figure;
+    legend_list = cell(length(idx), 1);
+    for i = 1:length(idx)
+        [r, ~] = find(idb==idx(i), 1, "first");
+        legend_list{i} = sprintf('Node %d', r);
+    end
+    subplot(2,1,1)
+    for ii = idx
+        semilogy(om/(2*pi), abs(X(ii,:)), 'LineWidth', 1.5)
+        hold on
+    end
+    xlabel('Frequency [Hz]')
+    ylabel('Displacement [m]')
+    title(plot_title)
+    legend(legend_list, 'Location', 'best')
+    grid on
+    subplot(2,1,2)
+    for ii = idx
+        plot(om/(2*pi), angle(X(ii,:)), 'LineWidth', 1.5)
+        hold on
+    end
+    xlabel('Frequency [Hz]')
+    ylabel('Phase [rad]')
+    title('Phase')
+    legend(legend_list, 'Location', 'southwest')
+    grid on
+end
+
+% displacement FRF
+plotFRF(om, X, [idb(6,2), idb(7,2), idb(31,2)], idb, 'Vertical displacement FRF');
+
+% acceleration FRF
+plotFRF(om, -om.^2 .* X, [idb(6,2), idb(7,2), idb(31,2)], idb, 'Vertical acceleration FRF');
+
+% FRF of shear force, bending moment and axial force at nodes 31 and 19
+% Shear force
+function coeffs = internal_coeffs(n_el, nod_i, nod_j, idb, l, gamma, X)
+    L_el = l(n_el);
+    idof_i = idb(nod_i,:);
+    idof_j = idb(nod_j,:);
+    lambda = [cos(gamma(n_el)) sin(gamma(n_el)) 0
+             -sin(gamma(n_el)) cos(gamma(n_el)) 0
+              0                0                1];
+    Xi = lambda * X(idof_i,:);
+    Xj = lambda * X(idof_j,:);
+
+    a = Xi(2,:);
+    b = Xj(3,:);
+    c = -3/L_el^2*Xi(2,:) -3/L_el^2*Xj(2,:) -2/L_el*Xi(3,:) -1/L_el*Xj(3,:);
+    d = 2/L_el^3*Xi(2,:) -2/L_el^3*Xj(2,:) +1/L_el^2*Xi(3,:) +1/L_el^2*Xj(3,:);
+    coeffs = [a; b; c; d];
+end
+coeffs_41 = internal_coeffs(41, 30, 31, idb, l, gamma, X);
+coeffs_23 = internal_coeffs(23, 30, 19, idb, l, gamma, X);
+T1 = EJ(41) * 6 * coeffs_41(4,:);
+T2 = EJ(23) * 6 * coeffs_23(4,:);
+figure
+subplot(2,1,1)
+semilogy(om/(2*pi), abs([T1; T2]), 'LineWidth', 1.5)
+xlabel('Frequency [Hz]')
+ylabel('Shear force [N]')
+title('Shear force FRF')
+legend('Node 31', 'Node 19', 'Location', 'best')
+grid on
+subplot(2,1,2)
+plot(om/(2*pi), angle([T1; T2]), 'LineWidth', 1.5)
+xlabel('Frequency [Hz]')
+ylabel('Phase [rad]')
+grid on
+
+% Bending moment
+M1 = EJ(41) * (2*coeffs_41(3,:) + 6*coeffs_41(4,:)*l(41));
+M2 = EJ(23) * (2*coeffs_23(3,:) + 6*coeffs_23(4,:)*l(23));
+figure
+subplot(2,1,1)
+semilogy(om/(2*pi), abs([M1; M2]), 'LineWidth', 1.5)
+xlabel('Frequency [Hz]')
+ylabel('Bending moment [Nm]')
+title('Bending moment FRF')
+legend('Node 31', 'Node 19', 'Location', 'best')
+grid on
+subplot(2,1,2)
+plot(om/(2*pi), angle([M1; M2]), 'LineWidth', 1.5)
+xlabel('Frequency [Hz]')
+ylabel('Phase [rad]')
+grid on
+
+% Axial force
+N1 = EA(41) * coeffs_41(2,:);
+N2 = EA(23) * coeffs_23(2,:);
+figure
+subplot(2,1,1)
+semilogy(om/(2*pi), abs([N1; N2]), 'LineWidth', 1.5)
+xlabel('Frequency [Hz]')
+ylabel('Axial force [N]')
+title('Axial force FRF')
+legend('Node 31', 'Node 19', 'Location', 'best')
+grid on
+subplot(2,1,2)
+plot(om/(2*pi), angle([N1; N2]), 'LineWidth', 1.5)
+xlabel('Frequency [Hz]')
+ylabel('Phase [rad]')
+grid on
