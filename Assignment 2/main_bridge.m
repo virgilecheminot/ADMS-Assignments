@@ -48,3 +48,13 @@ for i = 1:6
     legend('off');
     title(sprintf('Mode %d - f = %.2f Hz', i, omega(i)/(2*pi)));
 end
+
+%% Task 3
+B = [0.01 0.0075]';
+A = zeros(2,2);
+for ii=1:2
+    A(ii,:) = [1/(2*omega(ii)) omega(ii)/2];
+end
+ab = A\B;
+C = ab(1)*M + ab(2)*K;
+[CFF, CFC, CCC] = freefree(C, ndof);
