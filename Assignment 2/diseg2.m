@@ -97,6 +97,16 @@ end
 grid on
 box on
 axis equal
+
+% Calculate the limits for the plot with a slight margin
+x_min = min(xy(:,1));
+x_max = max(xy(:,1));
+y_min = min(xy(:,2));
+y_max = max(xy(:,2));
+margin = (0.03 + 0.003*scale_factor) * max(x_max - x_min, y_max - y_min);
+xlim([x_min - margin, x_max + margin]);
+ylim([y_min - margin, y_max + margin]);
+
 if n_modes <= 1
     L{2} = 'Mode shape';
 end
