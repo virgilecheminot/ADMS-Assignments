@@ -60,10 +60,8 @@ modes = x0(:,ind);
 % Plot the first 3 modes
 scale_factor = 1.5;
 figure
-for i = 1:3
-    mode = modes(:,i);
-    diseg2(mode, scale_factor, incid, l, gamma, posit, idb, xy);
-end
+diseg2(modes(:,1:3), scale_factor, incid, l, gamma, posit, idb, xy);
+title('First 3 modes with lumped elements');
 
 % plot the mode frequencies
 figure
@@ -142,10 +140,8 @@ modes_k = x0_k(:,ind_k);
 
 % Plot the first 3 modes
 figure
-for i = 1:3
-    mode = modes_k(:,i);
-    diseg2(mode, scale_factor, incid, l, gamma, posit, idb, xy);
-end
+diseg2(modes(:,1:3), scale_factor, incid, l, gamma, posit, idb, xy);
+title('First 3 modes with lumped elements and concentrated spring');
 
 % plot the mode frequencies
 figure
@@ -153,5 +149,5 @@ stem(omega_k/(2*pi), 'filled', 'LineWidth', 1.5);
 yscale('log');
 xlabel('Mode number');
 ylabel('Frequency [Hz]');
-title('Mode frequencies');
+title('Mode frequencies with concentrated spring');
 grid on;

@@ -70,10 +70,7 @@ modes = x0(:,ind);
 % Plot the first 3 modes
 scale_factor = 1.5;
 figure
-for i = 1:3
-    mode = modes(:,i);
-    diseg2(mode, scale_factor, incid, l, gamma, posit, idb, xy);
-end
+diseg2(modes(:,1:3), scale_factor, incid, l, gamma, posit, idb, xy);
 
 % plot the mode frequencies
 figure

@@ -7,8 +7,8 @@ h = 8e-3;       % [m]
 r = 2700;       % [kg/m^3]
 m = r*b*h;      % [kg/m]
 J = 1/12*b*h^3; % [m^4]
-A = b*h;        % [m^2]
-EA = E*A;       % [N]
+% A = b*h;        % [m^2]
+% EA = E*A;       % [N]
 EJ = E*J;       % [Nm^2]
 
 Omax = 500*2*pi;
@@ -42,12 +42,7 @@ modes = modes(:,ind);
 % Plot the first 3 modes
 scale_factor = 1.5;
 figure
-for i = 1:3
-    mode = modes(:,i);
-    subplot(3,1,i)
-    diseg2(mode, scale_factor, incid, l, gamma, posit, idb, xy);
-    title(['Mode ', num2str(i)])
-end
+diseg2(modes(:,1:3), scale_factor, incid, l, gamma, posit, idb, xy);
 
 %% Damping matrix
 
