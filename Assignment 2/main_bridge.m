@@ -39,16 +39,16 @@ omega = diag(sqrt(omega_squared));
 modes = x0(:,ind);
 
 % Plot the first 6 modes
-scale_factor = 10;
-figure('Position', [300 578 1311 480]);
-t = tiledlayout(3, 2, 'TileSpacing', 'compact', 'Padding', 'compact');
-for i = 1:6
-    mode = modes(:,i);
-    nexttile;
-    diseg2(mode, scale_factor, incid, l, gamma, posit, idb, xy);
-    legend('off');
-    title(sprintf('Mode %d - f = %.2f Hz', i, omega(i)/(2*pi)));
-end
+% scale_factor = 10;
+% figure('Position', [300 578 1311 480]);
+% t = tiledlayout(3, 2, 'TileSpacing', 'compact', 'Padding', 'compact');
+% for i = 1:6
+%     mode = modes(:,i);
+%     nexttile;
+%     diseg2(mode, scale_factor, incid, l, gamma, posit, idb, xy);
+%     legend('off');
+%     title(sprintf('Mode %d - f = %.2f Hz', i, omega(i)/(2*pi)));
+% end
 
 %% Task 3
 B = [0.01 0.0075]';
@@ -233,3 +233,21 @@ for k = 0:1
         grid on
     end
 end
+
+%% Task 6
+% load TMD input file and assemble the structure
+[file_i,xy,nnod,sizew,idb_TMD,ndof,incid,l,gamma,m,EA,EJ,posit,nbeam,pr]=loadstructure('TRUSS_BRIDGE_TMD');
+[M_TMD,K_TMD]=assem(incid,l,m,EA,EJ,gamma,idb_TMD);
+dis_stru(posit,l,gamma,xy,pr,idb_TMD,ndof);
+
+fprintf('Natural frequency of the first mode: %.3f Hz\n', omega(1)/(2*pi));
+whole_mass = sum(m.*l);
+fprintf('Maximum TDM mass: %.3f kg\n', 0.02*whole_mass);
+
+ml = 500;
+kl = omega(1)^2 * ml;
+cl = 0.3;
+
+m1 = Mmod(1,1);
+k1 = Kmod(1,1);
+c1 = Cmod(1,1);
