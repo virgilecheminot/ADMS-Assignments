@@ -1,4 +1,7 @@
-function diseg2(modes,scale_factor,incidenze,l,gamma,posiz,idb,xy)
+function diseg2(modes,scale_factor,incidenze,l,gamma,posiz,idb,xy,margin_rel)
+if ~exist('margin_rel', 'var')
+    margin_rel = 0.1;
+end
 
 % Checking consistency input data
 [n_el,~]=size(incidenze);
@@ -17,6 +20,7 @@ LH = gobjects(1, n_modes + 1); % Preallocate line handles array
 L = cell(1, n_modes + 1); % Preallocate legend labels cell array
 
 % Plot the reference structure (undeformed)
+grey = [0.3, 0.3, 0.3];
 for k = 1:n_el
     % Computing the axial (u) and transversal (w) displacements by means of shape functions
     csi = l(k) * (0:0.05:1);
@@ -24,10 +28,10 @@ for k = 1:n_el
              -sin(gamma(k)) cos(gamma(k)) 0.
               0.           0.           1.];
     undef = lambda(1:2, 1:2)' * [csi; zeros(1, length(csi))];
-    plot(undef(1, :) + posiz(k, 1), undef(2, :) + posiz(k, 2), 'k--', 'LineWidth', 1.5, 'HandleVisibility', 'off');
+    plot(undef(1, :) + posiz(k, 1), undef(2, :) + posiz(k, 2), '--', 'LineWidth', 1.5, 'HandleVisibility', 'off', 'Color', grey);
 end
-plot(xy(:, 1), xy(:, 2), 'k.', 'MarkerSize', 15, 'HandleVisibility', 'off')
-LH(1) = plot(nan, nan, 'k.--', 'LineWidth', 1.5, 'MarkerSize', 15, 'HandleVisibility', 'off');
+plot(xy(:, 1), xy(:, 2), '.', 'MarkerSize', 15, 'HandleVisibility', 'off', 'Color', grey);
+LH(1) = plot(nan, nan, '.--', 'LineWidth', 1.5, 'MarkerSize', 15, 'HandleVisibility', 'off', 'Color', grey);
 L{1} = 'Reference structure';
     
 
@@ -103,9 +107,12 @@ x_min = min(xy(:,1));
 x_max = max(xy(:,1));
 y_min = min(xy(:,2));
 y_max = max(xy(:,2));
-margin = (0.03 + 0.003*scale_factor) * max(x_max - x_min, y_max - y_min);
+margin = margin_rel * max(x_max - x_min, y_max - y_min);
 xlim([x_min - margin, x_max + margin]);
 ylim([y_min - margin, y_max + margin]);
+
+xlabel('x [m]')
+ylabel('y [m]')
 
 if n_modes <= 1
     L{2} = 'Mode shape';
