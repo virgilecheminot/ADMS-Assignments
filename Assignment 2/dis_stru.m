@@ -56,6 +56,8 @@ end
 axis equal
 xlim([min(xy(:,1))-10*d max(xy(:,1))+10*d]);
 ylim([min(xy(:,2))-10*d max(xy(:,2))+10*d]);
+xlabel('x [m]');
+ylabel('y [m]');
 
 
 title('Undeformed Structure')
