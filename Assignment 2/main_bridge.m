@@ -176,3 +176,60 @@ plot(om/(2*pi), angle([N1; N2]), 'LineWidth', 1.5)
 xlabel('Frequency [Hz]')
 ylabel('Phase [rad]')
 grid on
+
+% Missing part c of task 4
+
+%% Task 5
+% Modal matrices
+ii = 1:3; % consider the first 3 modes
+Phi = modes(:,ii);
+Mmod = Phi'*MFF*Phi;
+Kmod = Phi'*KFF*Phi;
+Cmod = Phi'*CFF*Phi;
+Fmod = Phi'*F0;
+
+% FRF in modal superposition approach
+function X = FRFmod(Kmod, Mmod, Cmod, Fmod, Phi, om)
+    Xmod = zeros(length(Fmod), length(om));
+    for i=1:length(om)
+        Xmod(:,i) = (Kmod - om(i)^2*Mmod + 1i*om(i)*Cmod)\Fmod;
+    end
+    X = Phi*Xmod;
+end
+
+Xmod = FRFmod(Kmod, Mmod, Cmod, Fmod, Phi, om);
+
+nodes_no = [6, 7, 31];
+function no = index_convert(i,N,M)
+    [r,c] = ind2sub([N,M], i);
+    no = sub2ind([M,N], c, r);
+end
+
+for k = 0:1
+    figure
+    for ii=1:length(nodes_no)
+        plot_no = index_convert(2*ii-1, 2, 3);
+        subplot(2,3,plot_no)
+        semilogy(om/(2*pi), abs((-om.^2).^k.* X(nodes_no(ii),:)), 'LineWidth', 1.5)
+        hold on
+        semilogy(om/(2*pi), abs((-om.^2).^k.* Xmod(nodes_no(ii),:)), 'LineWidth', 1.5)
+        xlabel('Frequency [Hz]')
+        ylabel('Amplitude')
+        str = 'Displacement';
+        if k == 1
+            str = 'Acceleration';
+        end
+        title(sprintf('Node %d - %s', nodes_no(ii), str))
+        grid on
+        legend('Direct FRF', 'Modal FRF', 'Location', 'best')
+        plot_no = index_convert(2*ii, 2, 3);
+        subplot(2,3,plot_no)
+        plot(om/(2*pi), angle((-om.^2).^k.* X(nodes_no(ii),:)), 'LineWidth', 1.5)
+        hold on
+        plot(om/(2*pi), angle((-om.^2).^k.* Xmod(nodes_no(ii),:)), 'LineWidth', 1.5)
+        xlabel('Frequency [Hz]')
+        ylabel('Phase [rad]')
+        title(sprintf('Node %d - Phase', nodes_no(ii)))
+        grid on
+    end
+end
