@@ -190,8 +190,8 @@ for ii = elements
     g = gamma(ii);
     p0L = [cos(g) sin(g);
           -sin(g) cos(g)] * p0G;
-    FkL = [Lk/2 ;  0   ; 0 ; Lk/2 ;  0   ; 0] * p0L(1) + ...
-          [ 0   ; Lk/2 ; 0 ;  0   ; Lk/2 ; 0] * p0L(2);
+    FkL = [Lk/2 ;  0   ;    0    ; Lk/2 ;  0   ;    0    ] * p0L(1) + ...
+          [ 0   ; Lk/2 ; Lk^2/12 ;  0   ; Lk/2 ; -Lk^2/12] * p0L(2);
     FkG = [cos(g) -sin(g) 0 0       0      0;
            sin(g)  cos(g) 0 0       0      0;
            0       0      1 0       0      0;
@@ -202,8 +202,8 @@ for ii = elements
     for jj = 1:6
         Ek(jj,incid(ii,jj)) = 1;
     end
+    FG = FG + Ek' * FkG;
 end
-FG = FG + Ek' * FkG;
 
 %% Static deflection
 xF = KFF\FG(1:ndof);
