@@ -9,7 +9,7 @@ dis_stru(posit,l,gamma,xy,pr,idb,ndof);
 % assemble mass and stiffness matrices
 [M,K]=assem(incid,l,m,EA,EJ,gamma,idb);
 
-%% Task 1
+%% Task 1 → OK
 % Define maximum angular frequency
 Omax = 7*2*pi;
 
@@ -27,7 +27,7 @@ else
 end
 % adding a node in the middle of every element solved the problem
 
-%% Task 2
+%% Task 2 → OK
 % Extract the free-free partition
 [MFF, MFC, MCC] = freefree(M, ndof);
 [KFF, KFC, KCC] = freefree(K, ndof);
@@ -39,18 +39,18 @@ omega = diag(sqrt(omega_squared));
 modes = x0(:,ind);
 
 % Plot the first 6 modes
-% scale_factor = 10;
-% figure('Position', [300 578 1311 480]);
-% t = tiledlayout(3, 2, 'TileSpacing', 'compact', 'Padding', 'compact');
-% for i = 1:6
-%     mode = modes(:,i);
-%     nexttile;
-%     diseg2(mode, scale_factor, incid, l, gamma, posit, idb, xy);
-%     legend('off');
-%     title(sprintf('Mode %d - f = %.2f Hz', i, omega(i)/(2*pi)));
-% end
+scale_factor = 10;
+figure('Position', [300 578 1311 480]);
+t = tiledlayout(3, 2, 'TileSpacing', 'compact', 'Padding', 'compact');
+for i = 1:6
+    mode = modes(:,i);
+    nexttile;
+    diseg2(mode, scale_factor, incid, l, gamma, posit, idb, xy, 0.05);
+    legend('off');
+    title(sprintf('Mode %d - f = %.2f Hz', i, omega(i)/(2*pi)));
+end
 
-%% Task 3
+%% Task 3 → OK
 B = [0.01 0.0075]';
 A = zeros(2,2);
 for ii=1:2
@@ -234,14 +234,71 @@ for k = 0:1
     end
 end
 
+%% Task 7
+whole_mass = sum(m.*l);
+fprintf('Total mass of the structure: %.0f kg\n', whole_mass);
+deck_elements = 1:12;
+deck_nodes = 1:13;
+function FG = distributed_load(deck_elements, incid, l, gamma, m, nnod)
+    FG = zeros(3*nnod, 1);
+    for ii = deck_elements
+        Lk = l(ii);
+        g = gamma(ii);
+        p0 = -m(ii)*9.81;
+        p0G = [0 p0]';
+        p0L = [cos(g) sin(g);
+            -sin(g) cos(g)] * p0G;
+        FkL = [Lk/2 ;  0   ;    0    ; Lk/2 ;  0   ;    0    ] * p0L(1) + ...
+              [ 0   ; Lk/2 ; Lk^2/12 ;  0   ; Lk/2 ; -Lk^2/12] * p0L(2);
+        FkG = [cos(g) -sin(g) 0 0       0      0;
+            sin(g)  cos(g) 0 0       0      0;
+            0       0      1 0       0      0;
+            0       0      0 cos(g) -sin(g) 0;
+            0       0      0 sin(g)  cos(g) 0;
+            0       0      0 0       0      1] * FkL;
+        Ek = zeros(6,3*nnod);
+        for jj = 1:6
+            Ek(jj, incid(ii,jj)) = 1;
+        end
+        FG = FG + Ek'*FkG;
+    end
+end
+
+function FG = weight_load(nodes, M, nnod, idb)
+    G = zeros(3*nnod, 1);
+    for ii = idb(nodes,2)'
+        G(ii) = -9.81;
+    end
+    FG = M*G;
+end
+
+FG_deck = distributed_load(deck_elements, incid, l, gamma, m, nnod);
+xF_deck = KFF\FG_deck(1:ndof);
+
+FG_deck2 = weight_load(deck_nodes, M, nnod, idb);
+xF_deck2 = KFF\FG_deck2(1:ndof);
+
+FG = distributed_load(1:nbeam, incid, l, gamma, m, nnod);
+xF = KFF\FG(1:ndof);
+
+FG2 = weight_load(1:nnod, M, nnod, idb);
+xF2 = KFF\FG2(1:ndof);
+
+ratio = whole_mass/sum(m(deck_elements).*l(deck_elements));
+
+xF_comp = ratio * xF_deck;
+
+figure
+diseg2([xF_deck, xF, xF_comp], 75, incid, l, gamma, posit, idb, xy, 0.05);
+title('Vertical displacement of the structure due to the distributed load');
+
 %% Task 6
 % load TMD input file and assemble the structure
-[file_i,xy,nnod,sizew,idb_TMD,ndof,incid,l,gamma,m,EA,EJ,posit,nbeam,pr]=loadstructure('TRUSS_BRIDGE_TMD');
+[file_i,xy,nnod_TMD,sizew,idb_TMD,ndof,incid,l,gamma,m,EA,EJ,posit,nbeam,pr]=loadstructure('TRUSS_BRIDGE_TMD');
 [M_TMD,K_TMD]=assem(incid,l,m,EA,EJ,gamma,idb_TMD);
 dis_stru(posit,l,gamma,xy,pr,idb_TMD,ndof);
 
 fprintf('Natural frequency of the first mode: %.3f Hz\n', omega(1)/(2*pi));
-whole_mass = sum(m.*l);
 fprintf('Maximum TDM mass: %.3f kg\n', 0.02*whole_mass);
 
 ml = 500;
