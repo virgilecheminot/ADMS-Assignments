@@ -60,7 +60,7 @@ ab = A\B;
 C = ab(1)*M + ab(2)*K;
 [CFF, CFC, CCC] = freefree(C, ndof);
 
-%% Task 4
+%% Task 4 → OK
 F0 = zeros(ndof, 1);
 F0(idb(6,2)) = 1; % force applied at node 6 in the y direction
 om = (0:0.01:7)*2*pi; 
@@ -119,8 +119,8 @@ function coeffs = internal_coeffs(n_el, nod_i, nod_j, idb, l, gamma, X)
     Xi = lambda * X(idof_i,:);
     Xj = lambda * X(idof_j,:);
 
-    a = Xi(2,:);
-    b = Xj(3,:);
+    a = Xi(1,:);
+    b = (Xj(1,:)-Xi(1,:))/L_el;
     c = -3/L_el^2*Xi(2,:) -3/L_el^2*Xj(2,:) -2/L_el*Xi(3,:) -1/L_el*Xj(3,:);
     d = 2/L_el^3*Xi(2,:) -2/L_el^3*Xj(2,:) +1/L_el^2*Xi(3,:) +1/L_el^2*Xj(3,:);
     coeffs = [a; b; c; d];
@@ -177,7 +177,30 @@ xlabel('Frequency [Hz]')
 ylabel('Phase [rad]')
 grid on
 
-% Missing part c of task 4
+% Reaction forces
+R = zeros(3*nnod-ndof, length(om));
+for ii = 1:length(om)
+    R(:,ii) = (-MFC'*om(ii)^2 + 1i*CFC'*om(ii) + KFC')*X(:,ii);
+end
+
+R1x = R(idb(1,1)-ndof,:);
+R1y = R(idb(1,2)-ndof,:);
+R13y = R(idb(13,2)-ndof,:);
+
+figure
+subplot(2,1,1)
+semilogy(om/(2*pi), abs([R1x; R1y; R13y]), 'LineWidth', 1.5)
+ylim([1e-4, 1e2])
+xlabel('Frequency [Hz]')
+ylabel('Reaction force [N]')
+title('Reaction force FRF')
+legend('Node 1 - x', 'Node 1 - y', 'Node 13 - y', 'Location', 'best')
+grid on
+subplot(2,1,2)
+plot(om/(2*pi), angle([R1x; R1y; R13y]), 'LineWidth', 1.5)
+xlabel('Frequency [Hz]')
+ylabel('Phase [rad]')
+grid on
 
 %% Task 5
 % Modal matrices
@@ -294,7 +317,7 @@ title('Vertical displacement of the structure due to the distributed load');
 
 %% Task 6
 % load TMD input file and assemble the structure
-[file_i,xy,nnod_TMD,sizew,idb_TMD,ndof,incid,l,gamma,m,EA,EJ,posit,nbeam,pr]=loadstructure('TRUSS_BRIDGE_TMD');
+[file_i,xy,nnod_TMD,sizew,idb_TMD,ndof_TMD,incid,l,gamma,m,EA,EJ,posit,nbeam,pr]=loadstructure('TRUSS_BRIDGE_TMD');
 [M_TMD,K_TMD]=assem(incid,l,m,EA,EJ,gamma,idb_TMD);
 dis_stru(posit,l,gamma,xy,pr,idb_TMD,ndof);
 
@@ -310,7 +333,7 @@ k1 = Kmod(1,1);
 c1 = Cmod(1,1);
 
 
-%% Task 8
+%% Task 8 → OK
 d = 27.5; % m
 for k = 1:3
     for i = 1:2
