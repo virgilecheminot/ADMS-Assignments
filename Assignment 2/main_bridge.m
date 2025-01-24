@@ -234,7 +234,7 @@ for k = 0:1
     end
 end
 
-%% Task 7
+%% Task 7 → OK
 whole_mass = sum(m.*l);
 fprintf('Total mass of the structure: %.0f kg\n', whole_mass);
 deck_elements = 1:12;
@@ -289,7 +289,7 @@ ratio = whole_mass/sum(m(deck_elements).*l(deck_elements));
 xF_comp = ratio * xF_deck;
 
 figure
-diseg2([xF_deck, xF, xF_comp], 75, incid, l, gamma, posit, idb, xy, 0.05);
+diseg2([xF_deck, xF], 75, incid, l, gamma, posit, idb, xy, 0.05);
 title('Vertical displacement of the structure due to the distributed load');
 
 %% Task 6
@@ -308,3 +308,13 @@ cl = 0.3;
 m1 = Mmod(1,1);
 k1 = Kmod(1,1);
 c1 = Cmod(1,1);
+
+
+%% Task 8
+d = 27.5; % m
+for k = 1:3
+    for i = 1:2
+        Vik = omega(i)*d/(2*pi*k); % critical velocity
+        fprintf('Critical velocity for mode %d and k = %d: %.1f km/h\n', i, k, Vik*3.6);
+    end
+end
