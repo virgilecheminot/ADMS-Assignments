@@ -202,7 +202,7 @@ xlabel('Frequency [Hz]')
 ylabel('Phase [rad]')
 grid on
 
-%% Task 5
+%% Task 5 → OK
 % Modal matrices
 ii = 1:3; % consider the first 3 modes
 Phi = modes(:,ii);
@@ -258,8 +258,8 @@ for k = 0:1
 end
 
 %% Task 7 → OK
-whole_mass = sum(m.*l);
-fprintf('Total mass of the structure: %.0f kg\n', whole_mass);
+bridge_m = sum(m.*l);
+fprintf('Total mass of the structure: %.0f kg\n', bridge_m);
 deck_elements = 1:12;
 deck_nodes = 1:13;
 function FG = distributed_load(deck_elements, incid, l, gamma, m, nnod)
@@ -307,7 +307,7 @@ xF = KFF\FG(1:ndof);
 FG2 = weight_load(1:nnod, M, nnod, idb);
 xF2 = KFF\FG2(1:ndof);
 
-ratio = whole_mass/sum(m(deck_elements).*l(deck_elements));
+ratio = bridge_m/sum(m(deck_elements).*l(deck_elements));
 
 xF_comp = ratio * xF_deck;
 
@@ -316,22 +316,117 @@ diseg2([xF_deck, xF], 75, incid, l, gamma, posit, idb, xy, 0.05);
 title('Vertical displacement of the structure due to the distributed load');
 
 %% Task 6
-% load TMD input file and assemble the structure
-[file_i,xy,nnod_TMD,sizew,idb_TMD,ndof_TMD,incid,l,gamma,m,EA,EJ,posit,nbeam,pr]=loadstructure('TRUSS_BRIDGE_TMD');
-[M_TMD,K_TMD]=assem(incid,l,m,EA,EJ,gamma,idb_TMD);
-dis_stru(posit,l,gamma,xy,pr,idb_TMD,ndof);
+% Choosing the parameters for the TMD
+Phi_TMD = modes(:,1);
+Mmod_TMD = Phi_TMD'*MFF*Phi_TMD;
+Kmod_TMD = Phi_TMD'*KFF*Phi_TMD;
+Cmod_TMD = Phi_TMD'*CFF*Phi_TMD;
+FRF_noTMD = 1./(-om.^2*Mmod_TMD + 1i*om*Cmod_TMD + Kmod_TMD);
 
-fprintf('Natural frequency of the first mode: %.3f Hz\n', omega(1)/(2*pi));
-fprintf('Maximum TDM mass: %.3f kg\n', 0.02*whole_mass);
+ml = 10:250:5000;
+hl = 0.01:0.01:0.3;
+reduction = zeros(length(ml), length(hl));
 
-ml = 500;
-kl = omega(1)^2 * ml;
-cl = 0.3;
+for i = 1:length(ml)
+    kl = omega(1)^2 * ml(i);
+    for j = 1:length(hl)
+        cl = hl(j) * 2 * ml(i) * omega(1);
+        MM = [Mmod_TMD 0; 0 ml(i)];
+        CC = [Cmod_TMD+cl -cl; -cl cl];
+        KK = [Kmod_TMD+kl -kl; -kl kl];
+        FF = [1 0]';
+        a = zeros(2, length(om));
+        for ii = 1:length(om)
+            a(:,ii) = (-om(ii)^2*MM + 1i*om(ii)*CC + KK) \ FF;
+        end
+        FRF_TMD = a(1,:);
+        reduction(i,j) = (1 - max(abs(FRF_TMD))/max(abs(FRF_noTMD)))*100;
+    end
+end
 
-m1 = Mmod(1,1);
-k1 = Kmod(1,1);
-c1 = Cmod(1,1);
+% figure;
+% surf(hl, ml, reduction);
+% hold on;
+% surf(hl, ml, ones(size(reduction))*50, 'FaceAlpha', 0.5);
+% xlabel('h_2 [m]');
+% ylabel('m_2 [kg]');
+% zlabel('Reduction [%]');
+% title('Reduction in the maximum displacement due to the TMD');
 
+% Choosing the optimal parameters
+ml = 333;
+hl = 0.2; % Values for 20% reduction
+% ml = 999;
+% hl = 0.14; % Values for 50% reduction
+kl = ml * omega(1)^2;
+cl = hl * 2 * ml * omega(1);
+
+% Applying the TMD
+[file_i2,xy2,nnod2,sizew2,idb2,ndof2,incid2,l2,gamma2,m2,EA2,EJ2,posit2,nbeam2,pr2]=loadstructure('TRUSS_BRIDGE_TMD');
+[M_TMD,K_TMD]=assem(incid2,l2,m2,EA2,EJ2,gamma2,idb2);
+dis_stru(posit2,l2,gamma2,xy2,pr2,idb2,ndof2);
+
+E_ml = zeros(1,3*nnod2); 
+E_ml(1,idb2(37,2)) = 1;
+M_TMD = M_TMD + E_ml'*ml*E_ml;
+
+K_k_L = [1 0 0 -1 0 0]' * kl * [1 0 0 -1 0 0];
+g = 3*pi/2;
+lambda_k = [cos(g)  sin(g) 0
+            -sin(g) cos(g) 0
+            0       0      1];
+Lambda_k = [lambda_k zeros(3,3)
+            zeros(3,3) lambda_k ];
+K_k_G = Lambda_k' * K_k_L * Lambda_k;
+
+idofn2 = idb2(37,:);
+idofn6 = idb2(7,:);
+idofk = [idofn2 idofn6];
+
+K_TMD(idofk, idofk) = K_TMD(idofk, idofk) + K_k_G;
+
+C_TMD = ab(1)*M_TMD + ab(2)*K_TMD;
+
+C_c_L = [1 0 0 -1 0 0]' * cl * [1 0 0 -1 0 0];
+C_c_G = Lambda_k' * C_c_L * Lambda_k;
+
+C_TMD(idofk, idofk) = C_TMD(idofk, idofk) + C_c_G;
+
+MFF_TMD = freefree(M_TMD, ndof2);
+KFF_TMD = freefree(K_TMD, ndof2);
+CFF_TMD = freefree(C_TMD, ndof2);
+
+[x0_TMD, omega_squared_TMD] = eig(MFF_TMD\KFF_TMD);
+omega_TMD = diag(sqrt(omega_squared_TMD));
+[omega_TMD, ind_TMD] = sort(omega_TMD);
+modes_TMD = x0_TMD(:,ind_TMD);
+
+% Plot the first mode
+figure
+diseg2(modes_TMD(:,1), 10, incid2, l2, gamma2, posit2, idb2, xy2, 0.05);
+title('First mode of the structure with TMD');
+
+F0_TMD = zeros(ndof2,1);
+F0_TMD(idb2(6,2)) = 1;
+
+X_TMD = zeros(ndof2, length(om));
+for ii = 1:length(om)
+    A = -om(ii)^2*MFF_TMD + 1i*om(ii)*CFF_TMD + KFF_TMD;
+    X_TMD(:,ii) = A\F0_TMD;
+end
+
+reduction_TMD = (1 - max(abs(X_TMD(idb2(6,2),200:300)))/max(abs(X(idb2(6,2),200:300))))*100;
+
+% Plot the FRF
+figure
+semilogy(om/(2*pi), abs(X(idb2(6,2),:)), 'LineWidth', 1.5)
+hold on
+semilogy(om/(2*pi), abs(X_TMD(idb2(6,2),:)), 'LineWidth', 1.5)
+xlabel('Frequency [Hz]')
+ylabel('Amplitude')
+title_str = sprintf('Frequency Response Function - Reduction: %.2f%%', reduction_TMD);
+title(title_str)
+legend('No TMD','With TMD')
 
 %% Task 8 → OK
 d = 27.5; % m

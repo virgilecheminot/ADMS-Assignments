@@ -92,6 +92,7 @@
 44 	33  34  8
 45 	34  35  8
 46 	35  36  8
+47  7   37  10
 *ENDBEAMS
 !         ---------------------------------------------
 ! List of properties
@@ -106,4 +107,5 @@
 7   94.2    2.52e9  1.63e7  ! Diag member K6
 8   5.34e2  1.43e10 1.21e9  ! Upper chord G1
 9   5.93e2  1.59e10 1.36e9  ! Upper chord G2
+10  0       0       0       ! TMD link
 *ENDPROPERTIES
